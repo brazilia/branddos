@@ -44,21 +44,18 @@ p {
   line-height: 1.6;
 }
 
-/* === Links === */
-a {
-  color: var(--color-secondary);
-  text-decoration: none;
-  transition: color 0.2s;
-  background-color: var(--color-secondary);
-}
 
-a:hover {
-  color: var(--color-primary);
-}
 .shadow-soft {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
+.btn-primary {
+  @apply bg-blue-600 text-white px-6 py-3 rounded-md text-sm font-semibold hover:bg-blue-700 transition;
+}
+
+.btn-secondary {
+  @apply text-blue-600 border border-blue-600 px-6 py-3 rounded-md text-sm font-semibold hover:bg-blue-50 transition;
+}
 /* === Buttons === */
 .button-primary {
   background-color: var(--color-primary);
