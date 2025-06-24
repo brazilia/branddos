@@ -1,0 +1,79 @@
+export const templates = {
+    default_sale: {
+      backgroundOverlay: {
+        type: "gradient",
+        colors: ["rgba(0,0,0,0.8)", "rgba(0,0,0,0.0)"],
+        direction: "to top",
+        heightRatio: 0.35,
+      },
+      text: {
+        headline: {
+          font: "bold 48px Arial",
+          color: "#ffffff",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.75,
+        },
+        subtext: {
+          font: "28px Arial",
+          color: "#dddddd",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.85,
+        },
+      },
+    },
+  
+    bold_announcement: {
+      backgroundOverlay: {
+        type: "solid",
+        color: "rgba(255,255,255,0.8)",
+        heightRatio: 1.0,
+      },
+      text: {
+        headline: {
+          font: "bold 60px Arial",
+          color: "#000000",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.4,
+        },
+        subtext: {
+          font: "32px Arial",
+          color: "#333333",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.55,
+        },
+      },
+    },
+  
+    light_theme_toptext: {
+      backgroundOverlay: {
+        type: "blur",
+        area: {
+          xRatio: 0,
+          yRatio: 0,
+          widthRatio: 1,
+          heightRatio: 0.3,
+        },
+      },
+      text: {
+        headline: {
+          font: "bold 42px Arial",
+          color: "#222",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.15,
+        },
+        subtext: {
+          font: "24px Arial",
+          color: "#555",
+          align: "center",
+          xRatio: 0.5,
+          yRatio: 0.22,
+        },
+      },
+    },
+  };
+  

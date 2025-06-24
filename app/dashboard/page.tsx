@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { Sparkles, Copy, RefreshCw } from "lucide-react";
 
 export default function DashboardPage() {
   const [type, setType] = useState("Instagram Caption");
@@ -9,6 +10,7 @@ export default function DashboardPage() {
   const [output, setOutput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -48,50 +50,167 @@ export default function DashboardPage() {
     }
   };
 
+  const copyToClipboard = async () => {
+    await navigator.clipboard.writeText(output);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !loading && input) {
+      handleGenerate();
+    }
+  };
+
   return (
-    <div className="max-w-2xl mx-auto mt-10 px-4">
-      <h2 className="text-3xl font-bold mb-6 text-[#213555]">Generate Content</h2>
-
-      <div className="space-y-4">
-        <label className="block font-medium text-[#3E5879]">Post Type</label>
-        <select
-          className="w-full border border-[#213555] px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#3E5879]"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
-          <option>Instagram Caption</option>
-          <option>Tweet</option>
-          <option>Reply to Comment</option>
-        </select>
-
-        <label className="block font-medium text-[#3E5879]">Prompt / Idea</label>
-        <input
-          type="text"
-          className="w-full border border-[#213555] px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-[#3E5879]"
-          placeholder="e.g. announce new product drop"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-
-        <button
-          onClick={handleGenerate}
-          disabled={loading || !input}
-          className="bg-[#213555] text-white px-6 py-2 rounded hover:bg-[#1A2B45] transition disabled:opacity-50"
-        >
-          {loading ? "Generating..." : "Generate"}
-        </button>
+    <div className="min-h-screen p-8 bg-gradient-to-br from-stone-100 via-amber-50 to-orange-50">
+      
+      {/* Header */}
+      <div className="max-w-6xl mx-auto mb-12">
+        <h1 className="text-4xl font-black text-stone-800 mb-2">Content Generator</h1>
+        <p className="text-stone-600 text-lg">Create engaging social media content in seconds</p>
       </div>
 
-      {error && (
-        <div className="mt-6 text-red-600 font-semibold">{error}</div>
-      )}
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-12">
+          
+          {/* Input Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
+            <h2 className="text-2xl font-bold text-stone-800 mb-8">Input</h2>
+            
+            <div className="space-y-6">
+              {/* Post Type Selector */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-3">Post Type</label>
+                <select
+                  className="w-full px-4 py-4 rounded-2xl border border-stone-300 font-medium transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                >
+                  <option>Instagram Caption</option>
+                  <option>Tweet</option>
+                  <option>Reply to Comment</option>
+                  <option>LinkedIn Post</option>
+                  <option>Facebook Post</option>
+                  <option>YouTube Description</option>
+                  <option>TikTok Caption</option>
+                </select>
+              </div>
 
-      {output && (
-        <div className="mt-10 p-6 border border-[#213555] rounded bg-[#F5F8FA] text-[#213555]">
-          <h3 className="font-semibold mb-2">Generated:</h3>
-          <p className="whitespace-pre-wrap">{output}</p>
+              {/* Input Field */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-3">Your Idea</label>
+                <textarea
+                  rows={4}
+                  className="w-full px-4 py-4 rounded-2xl border border-stone-300 font-medium transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white resize-none"
+                  placeholder="e.g., announce new product drop, share behind the scenes, promote upcoming event..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                />
+              </div>
+
+              {/* Generate Button */}
+              <button
+                onClick={handleGenerate}
+                disabled={loading || !input}
+                className="w-full py-4 rounded-2xl font-bold text-lg text-white transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center space-x-3 shadow-lg"
+                style={{ 
+                  background: loading ? 'rgba(120, 113, 108, 0.7)' : 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+                }}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    <span>Generate Content</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Output Section */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-bold text-stone-800">Generated Content</h2>
+              {output && (
+                <button
+                  onClick={copyToClipboard}
+                  className="p-3 rounded-2xl transition-all duration-300 hover:scale-110 bg-stone-100 hover:bg-emerald-100 border border-stone-200"
+                  title="Copy to clipboard"
+                >
+                  {copied ? (
+                    <div className="w-5 h-5 text-emerald-600 font-bold flex items-center justify-center">✓</div>
+                  ) : (
+                    <Copy className="w-5 h-5 text-stone-600" />
+                  )}
+                </button>
+              )}
+            </div>
+            
+            {/* Error Display */}
+            {error && (
+              <div className="p-6 rounded-2xl mb-6 border-l-4 border-red-500 bg-red-50">
+                <p className="text-red-700 font-medium">{error}</p>
+              </div>
+            )}
+
+            {/* Output Display */}
+            {output ? (
+              <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-bold text-stone-600 uppercase tracking-wider px-3 py-1 rounded-full bg-stone-200">
+                    {type}
+                  </span>
+                  <span className="px-3 py-1 rounded-full text-sm font-bold text-white bg-emerald-500">
+                    Ready to use
+                  </span>
+                </div>
+                <p className="text-stone-800 leading-relaxed whitespace-pre-wrap font-medium">
+                  {output}
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50">
+                <div className="text-center">
+                  <Sparkles className="w-12 h-12 text-stone-400 mx-auto mb-4" />
+                  <p className="text-stone-600 font-medium">
+                    Your generated content will appear here
+                  </p>
+                  <p className="text-stone-500 text-sm mt-2">
+                    Enter your idea and click generate to get started
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Quick Tips */}
+        <div className="mt-16 bg-white/60 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
+          <h3 className="text-xl font-bold text-stone-800 mb-6">💡 Quick Tips</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-stone-800">Be Specific</h4>
+              <p className="text-stone-600 text-sm">Include details like target audience, tone, or specific features to mention for better results.</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-stone-800">Add Context</h4>
+              <p className="text-stone-600 text-sm">Mention your industry, brand personality, or campaign goals for more targeted content.</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold text-stone-800">Experiment</h4>
+              <p className="text-stone-600 text-sm">Try different post types and styles to discover what resonates best with your audience.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+}   
