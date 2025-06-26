@@ -1,11 +1,10 @@
-// app/dashboard/chat/page.tsx
-
 "use client";
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { SendHorizonal, Bot, User, CornerDownLeft } from "lucide-react";
 import { cn } from "@/lib/utils"; 
+import { useRouter } from 'next/navigation';
 
 // A self-contained typing indicator component for cleanliness
 const TypingIndicator = () => (
@@ -23,6 +22,7 @@ const TypingIndicator = () => (
 
 
 export default function ChatPage() {
+    const router = useRouter();
     const [messages, setMessages] = useState([
         { role: "assistant", content: "Hi! How can I help with your social media today?" },
     ]);
@@ -30,7 +30,7 @@ export default function ChatPage() {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // This logic works with your standard JSON API
+    // This is the updated, robust sendMessage function with corrected variable names
     const sendMessage = async () => {
         if (!input.trim()) return;
 
@@ -41,13 +41,20 @@ export default function ChatPage() {
         setLoading(true);
 
         try {
-            const session = await supabase.auth.getSession();
-            const accessToken = session.data.session?.access_token;
-            if (!accessToken) throw new Error("You must be logged in to generate content.");
+            // THE FIX: Renamed 'data' to 'refreshData' to avoid conflict
+            const { data: refreshData, error: sessionError } = await supabase.auth.refreshSession();
+            const { session } = refreshData;
+
+            if (sessionError || !session) {
+                throw new Error("Authentication failed or session expired. Please log in again.");
+            }
         
             const res = await fetch("/api/chat", {
                 method: "POST",
-                headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+                headers: { 
+                    "Content-Type": "application/json", 
+                    "Authorization": `Bearer ${session.access_token}` 
+                },
                 body: JSON.stringify({ messages: newMessages }),
             });
 
@@ -55,12 +62,18 @@ export default function ChatPage() {
                 const errorData = await res.json();
                 throw new Error(errorData.error || "Failed to fetch response from API.");
             }
+            
+            // THE FIX: This 'data' variable is now correctly scoped
+            const responseData = await res.json();
+            setMessages([...newMessages, { role: "assistant", content: responseData.reply }]);
 
-            const data = await res.json();
-            setMessages([...newMessages, { role: "assistant", content: data.reply }]);
         } catch(error: any) {
             console.error("Chat Error:", error);
-            setMessages([...newMessages, { role: "assistant", content: `Sorry, an error occurred: ${error.message}` }]);
+            if (error.message.includes('Authentication failed')) {
+                router.push('/login');
+            } else {
+                setMessages([...newMessages, { role: "assistant", content: `Sorry, an error occurred: ${error.message}` }]);
+            }
         } finally {
             setLoading(false);
         }

@@ -2,11 +2,11 @@
 
 import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
 import { useState } from "react";
-// Import icons for a better user experience
+import { useRouter } from 'next/navigation'; // <-- Missing import added
 import { Sparkles, Loader2, ImageIcon, AlertTriangle } from "lucide-react";
 
 export default function ImageForm() {
-  // --- CORE FUNCTIONALITY (UNCHANGED) ---
+  const router = useRouter(); // <-- Missing initialization added
   const [userPrompt, setUserPrompt] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,48 +20,60 @@ export default function ImageForm() {
     }
     setLoading(true);
     setError(null);
-    setGeneratedImage(null); // Clear previous image on new generation
+    setGeneratedImage(null);
+    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("User not authenticated");
+      // Correctly scope the session refresh data
+      const { data: refreshData, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !refreshData.session) {
+        throw new Error("Authentication failed or session expired. Please log in again.");
+      }
+      
+      const { session } = refreshData;
 
       const response = await fetch("/api/refine-image-prompt", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ userPrompt }),
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
       });
 
       if (!response.ok) {
-        const errorMessage = await response.text();
-        throw new Error(`API Error: ${errorMessage}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API Error: ${response.statusText}`);
       }
-      const data = await response.json();
-      setGeneratedImage(data.imageUrl || "");
+      
+      // Correctly scope the response data
+      const responseData = await response.json();
+      setGeneratedImage(responseData.imageUrl || "");
+      
     } catch (err: any) {
+      if (err.message.includes('session expired')) {
+          router.push('/login');
+      }
       setError(err.message || "An unknown error occurred.");
     } finally {
       setLoading(false);
     }
   };
-  // --- END OF CORE FUNCTIONALITY ---
 
+  // The JSX for this component remains the same, it was already well-structured.
   return (
-    // 1. Improved Layout: A central card with soft shadows and a modern feel.
     <div className="bg-white max-w-2xl mx-auto my-12 p-6 sm:p-8 rounded-2xl shadow-2xl shadow-slate-200/70 border border-slate-100">
       <div className="space-y-6">
         
-        {/* Title for clarity and context */}
         <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-800">AI Image Studio</h1>
             <p className="text-gray-500 mt-2">Describe an image and let our AI bring your vision to life.</p>
         </div>
 
-        {/* Form elements section */}
         <div className="space-y-4">
           <label htmlFor="prompt-input" className="block text-sm font-medium text-gray-700">
             Your Creative Prompt
           </label>
-          {/* 2. Upgraded Input: A textarea is better for longer prompts. */}
           <textarea
             id="prompt-input"
             value={userPrompt}
@@ -69,8 +81,6 @@ export default function ImageForm() {
             placeholder="e.g., A minimalist photo of a sleek black coffee mug on a marble countertop, morning light."
             className="w-full h-24 p-4 text-gray-700 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-shadow duration-200 resize-none"
           />
-
-          {/* 3. Upgraded Button: Uses brand colors, an icon, and a clear loading state. */}
           <button
             onClick={handleGenerate}
             disabled={loading}
@@ -90,7 +100,6 @@ export default function ImageForm() {
           </button>
         </div>
         
-        {/* 4. Clear Error State: A dedicated, styled UI for displaying errors. */}
         {error && (
           <div className="flex items-center gap-x-3 p-3 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
             <AlertTriangle className="w-5 h-5 flex-shrink-0"/>
@@ -102,7 +111,6 @@ export default function ImageForm() {
             <hr className="border-slate-200" />
         </div>
 
-        {/* 5. State-driven Result Area: Shows a different UI for initial, loading, and success states. */}
         <div className="w-full aspect-video bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200">
           {loading && (
             <div className="flex flex-col items-center text-gray-500 animate-pulse">
@@ -123,8 +131,7 @@ export default function ImageForm() {
              <img 
                 src={generatedImage} 
                 alt="AI generated image based on user prompt" 
-                className="w-full h-full object-cover transition-opacity duration-500 animate-fade-in-up"
-                style={{animationDuration: '0.5s'}}
+                className="w-full h-full object-cover transition-opacity duration-500 animate-in fade-in"
              />
           )}
         </div>
