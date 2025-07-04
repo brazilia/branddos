@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+// We no longer need the supabase client on the frontend for this component!
 import { Sparkles, Copy, RefreshCw } from "lucide-react";
 
 export default function DashboardPage() {
@@ -18,20 +18,14 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      const session = await supabase.auth.getSession();
-      const accessToken = session.data.session?.access_token;
-
-      if (!accessToken) {
-        throw new Error("You must be logged in to generate content.");
-      }
-
+      // THE FIX: Simplified fetch call.
+      // No more getSession(), no more access_token, no more Authorization header.
+      // The auth helpers handle everything automatically with cookies.
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
         },
-        credentials: "include",
         body: JSON.stringify({ input, type }),
       });
 
@@ -50,6 +44,8 @@ export default function DashboardPage() {
     }
   };
 
+  // ... the rest of your component (copyToClipboard, handleKeyPress, and all the JSX) is perfect and requires NO changes.
+  
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(output);
     setCopied(true);
@@ -213,4 +209,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}   
+}

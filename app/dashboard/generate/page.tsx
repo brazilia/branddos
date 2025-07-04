@@ -1,17 +1,19 @@
 "use client";
 
-import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
+// THE FIX: Use the modern client component helper
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useState } from "react";
-import { useRouter } from 'next/navigation'; // <-- Missing import added
+import { useRouter } from 'next/navigation';
 import { Sparkles, Loader2, ImageIcon, AlertTriangle } from "lucide-react";
 
 export default function ImageForm() {
-  const router = useRouter(); // <-- Missing initialization added
+  const router = useRouter();
   const [userPrompt, setUserPrompt] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createBrowserSupabaseClient();
+  // This is no longer needed for the fetch, but it's good practice to use the right helper.
+  const supabase = createClientComponentClient(); 
 
   const handleGenerate = async () => {
     if (!userPrompt?.trim()) {
@@ -23,44 +25,36 @@ export default function ImageForm() {
     setGeneratedImage(null);
     
     try {
-      // Correctly scope the session refresh data
-      const { data: refreshData, error: sessionError } = await supabase.auth.refreshSession();
-      
-      if (sessionError || !refreshData.session) {
-        throw new Error("Authentication failed or session expired. Please log in again.");
-      }
-      
-      const { session } = refreshData;
-
+      // SIMPLIFIED FETCH: No more manual session refreshing or token handling.
+      // The browser automatically sends the auth cookie.
       const response = await fetch("/api/refine-image-prompt", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ userPrompt }),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `API Error: ${response.statusText}`);
+        // If the server returns a 401 Unauthorized, redirect to login
+        if (response.status === 401) {
+            router.push('/login');
+        }
+        throw new Error(responseData.error || `API Error: ${response.statusText}`);
       }
       
-      // Correctly scope the response data
-      const responseData = await response.json();
       setGeneratedImage(responseData.imageUrl || "");
       
     } catch (err: any) {
-      if (err.message.includes('session expired')) {
-          router.push('/login');
-      }
       setError(err.message || "An unknown error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
-  // The JSX for this component remains the same, it was already well-structured.
+  // ... All of your JSX remains exactly the same. It's already perfect. ...
   return (
     <div className="bg-white max-w-2xl mx-auto my-12 p-6 sm:p-8 rounded-2xl shadow-2xl shadow-slate-200/70 border border-slate-100">
       <div className="space-y-6">
