@@ -3,7 +3,7 @@
 // THE FIX: Use the modern client component helper
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { useState } from "react";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { Sparkles, Loader2, ImageIcon, AlertTriangle } from "lucide-react";
 
 export default function ImageForm() {
@@ -13,7 +13,7 @@ export default function ImageForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   // This is no longer needed for the fetch, but it's good practice to use the right helper.
-  const supabase = createClientComponentClient(); 
+  const supabase = createClientComponentClient();
 
   const handleGenerate = async () => {
     if (!userPrompt?.trim()) {
@@ -23,7 +23,7 @@ export default function ImageForm() {
     setLoading(true);
     setError(null);
     setGeneratedImage(null);
-    
+
     try {
       // SIMPLIFIED FETCH: No more manual session refreshing or token handling.
       // The browser automatically sends the auth cookie.
@@ -40,13 +40,14 @@ export default function ImageForm() {
       if (!response.ok) {
         // If the server returns a 401 Unauthorized, redirect to login
         if (response.status === 401) {
-            router.push('/login');
+          router.push("/login");
         }
-        throw new Error(responseData.error || `API Error: ${response.statusText}`);
+        throw new Error(
+          responseData.error || `API Error: ${response.statusText}`
+        );
       }
-      
+
       setGeneratedImage(responseData.imageUrl || "");
-      
     } catch (err: any) {
       setError(err.message || "An unknown error occurred.");
     } finally {
@@ -58,14 +59,18 @@ export default function ImageForm() {
   return (
     <div className="bg-white max-w-2xl mx-auto my-12 p-6 sm:p-8 rounded-2xl shadow-2xl shadow-slate-200/70 border border-slate-100">
       <div className="space-y-6">
-        
         <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800">AI Image Studio</h1>
-            <p className="text-gray-500 mt-2">Describe an image and let our AI bring your vision to life.</p>
+          <h1 className="text-3xl font-bold text-gray-800">AI Image Studio</h1>
+          <p className="text-gray-500 mt-2">
+            Describe an image and let our AI bring your vision to life.
+          </p>
         </div>
 
         <div className="space-y-4">
-          <label htmlFor="prompt-input" className="block text-sm font-medium text-gray-700">
+          <label
+            htmlFor="prompt-input"
+            className="block text-sm font-medium text-gray-700"
+          >
             Your Creative Prompt
           </label>
           <textarea
@@ -93,43 +98,44 @@ export default function ImageForm() {
             )}
           </button>
         </div>
-        
+
         {error && (
           <div className="flex items-center gap-x-3 p-3 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0"/>
+            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <div>{error}</div>
           </div>
         )}
-        
+
         <div className="pt-4">
-            <hr className="border-slate-200" />
+          <hr className="border-slate-200" />
         </div>
 
-        <div className="w-full aspect-video bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200">
+        <div className="w-full bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200">
           {loading && (
             <div className="flex flex-col items-center text-gray-500 animate-pulse">
-                <Loader2 className="w-10 h-10 mb-4 animate-spin"/>
-                <p className="font-semibold">Conjuring up your masterpiece...</p>
-                <p className="text-sm">This can take a moment.</p>
+              <Loader2 className="w-10 h-10 mb-4 animate-spin" />
+              <p className="font-semibold">Conjuring up your masterpiece...</p>
+              <p className="text-sm">This can take a moment.</p>
             </div>
           )}
-          
+
           {!loading && !generatedImage && (
-             <div className="text-center text-gray-400">
-                <ImageIcon className="w-12 h-12 mx-auto mb-2"/>
-                <p className="font-medium">Your generated image will appear here</p>
+            <div className="text-center text-gray-400">
+              <ImageIcon className="w-12 h-12 mx-auto mb-2" />
+              <p className="font-medium">
+                Your generated image will appear here
+              </p>
             </div>
           )}
 
           {generatedImage && (
-             <img 
-                src={generatedImage} 
-                alt="AI generated image based on user prompt" 
-                className="w-full h-full object-cover transition-opacity duration-500 animate-in fade-in"
-             />
+            <img
+              src={generatedImage}
+              alt="AI generated image based on user prompt"
+              className="w-full h-auto max-w-full max-h-[75vh] object-contain transition-opacity duration-500 animate-in fade-in"
+            />
           )}
         </div>
-
       </div>
     </div>
   );
