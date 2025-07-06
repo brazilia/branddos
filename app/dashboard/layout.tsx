@@ -1,11 +1,14 @@
+// app/dashboard/layout.js
 "use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation"; // --- Step 1: Import useRouter
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"; // --- Step 1: Import Supabase client
-import { Zap, Home, Image, History, Library, Settings, MessageCircle, Sparkles, Menu, X, LogOut } from "lucide-react"; // --- Step 1: Import LogOut icon
+import { usePathname, useRouter } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Zap, Home, Image, History, Library, Settings, MessageCircle, Sparkles, Menu, X, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/lib/i18n/context";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function DashboardLayout({
   children,
@@ -14,29 +17,27 @@ export default function DashboardLayout({
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathname = usePathname();
-  // --- Step 2: Initialize router and Supabase client ---
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const { t } = useLanguage();
 
-  // --- Step 2: Create the handleSignOut function ---
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.refresh(); // Clears any cached user data
-    router.push('/'); // Redirect to the homepage
+    router.refresh();
+    router.push('/');
   };
 
-
   const navItems = [
-    { href: "/dashboard", icon: Sparkles, label: "Generate" },
-    { href: "/dashboard/generate", icon: Image, label: "Generate Image" },
-    { href: "/dashboard/history", icon: History, label: "History" },
-    { href: "/dashboard/library", icon: Library, label: "Image Library" },
-    { href: "/dashboard/chat", icon: MessageCircle, label: "Chatbot" },
+    { href: "/dashboard", icon: Sparkles, label: t('dashboard.generate') },
+    { href: "/dashboard/generate", icon: Image, label: t('dashboard.generateImage') },
+    { href: "/dashboard/history", icon: History, label: t('dashboard.history') },
+    { href: "/dashboard/library", icon: Library, label: t('dashboard.imageLibrary') },
+    { href: "/dashboard/chat", icon: MessageCircle, label: t('dashboard.chatbot') },
   ];
 
   const bottomNavItems = [
-    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-    { href: "/", icon: Home, label: "Home" },
+    { href: "/dashboard/settings", icon: Settings, label: t('dashboard.settings') },
+    { href: "/", icon: Home, label: t('nav.home') },
   ];
   
   useEffect(() => {
@@ -54,7 +55,9 @@ export default function DashboardLayout({
           <span className="text-xl font-black tracking-tight text-stone-800">
             BRAND<span className="text-emerald-600">DOS</span>
           </span>
-          <div className="text-xs font-medium text-stone-500 -mt-1">Dashboard</div>
+          <div className="text-xs font-medium text-stone-500 -mt-1">
+            {t('nav.dashboard')}
+          </div>
         </div>
       </div>
 
@@ -83,6 +86,11 @@ export default function DashboardLayout({
 
       {/* Bottom Nav Items & User Section */}
       <div className="px-4">
+        {/* Language Selector - moved to bottom */}
+        <div className="mb-4">
+          <LanguageSelector variant="sidebar" />
+        </div>
+        
         <nav className="flex flex-col gap-2 pt-4 border-t border-stone-200">
            {bottomNavItems.map((item) => {
              const isActive = pathname === item.href;
@@ -100,13 +108,13 @@ export default function DashboardLayout({
               );
             })}
             
-            {/* --- Step 3: Add the Log Out Button --- */}
+            {/* Log Out Button */}
             <button
                 onClick={handleSignOut}
                 className="group flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 text-stone-500 hover:text-red-600 hover:bg-red-100 w-full"
             >
                 <LogOut className="w-5 h-5"/>
-                <span>Log Out</span>
+                <span>{t('dashboard.logOut')}</span>
             </button>
         </nav>
         <div className="pt-4 mt-2 border-t border-stone-200">
@@ -148,13 +156,19 @@ export default function DashboardLayout({
                  </div>
                  <span className="text-lg font-black text-stone-800">BRANDDOS</span>
             </Link>
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-md text-stone-600 hover:bg-stone-100 hover:text-stone-800"
-            aria-label="Toggle Menu"
-          >
-             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+            
+            <div className="flex items-center gap-2">
+              {/* Mobile Language Selector */}
+              <LanguageSelector variant="mobile" />
+              
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                className="p-2 rounded-md text-stone-600 hover:bg-stone-100 hover:text-stone-800"
+                aria-label="Toggle Menu"
+              >
+                 {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
         </header>
 
         <main className="flex-1 overflow-y-auto">

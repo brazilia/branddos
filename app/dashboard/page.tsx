@@ -1,8 +1,9 @@
+// 4. Update: app/dashboard/page.tsx
 "use client";
 
 import { useState } from "react";
-// We no longer need the supabase client on the frontend for this component!
 import { Sparkles, Copy, RefreshCw } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/context";
 
 export default function DashboardPage() {
   const [type, setType] = useState("Instagram Caption");
@@ -11,6 +12,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  
+  const { t } = useLanguage();
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -18,9 +21,6 @@ export default function DashboardPage() {
     setError("");
 
     try {
-      // THE FIX: Simplified fetch call.
-      // No more getSession(), no more access_token, no more Authorization header.
-      // The auth helpers handle everything automatically with cookies.
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: {
@@ -44,8 +44,6 @@ export default function DashboardPage() {
     }
   };
 
-  // ... the rest of your component (copyToClipboard, handleKeyPress, and all the JSX) is perfect and requires NO changes.
-  
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(output);
     setCopied(true);
@@ -58,13 +56,28 @@ export default function DashboardPage() {
     }
   };
 
+  // Get post type options with translations
+  const postTypeOptions = [
+    "Instagram Caption",
+    "Tweet", 
+    "Reply to Comment",
+    "LinkedIn Post",
+    "Facebook Post",
+    "YouTube Description",
+    "TikTok Caption"
+  ];
+
   return (
     <div className="min-h-screen p-8 bg-gradient-to-br from-stone-100 via-amber-50 to-orange-50">
       
       {/* Header */}
       <div className="max-w-6xl mx-auto mb-12">
-        <h1 className="text-4xl font-black text-stone-800 mb-2">Content Generator</h1>
-        <p className="text-stone-600 text-lg">Create engaging social media content in seconds</p>
+        <h1 className="text-4xl font-black text-stone-800 mb-2">
+          {t('dashboard.title')}
+        </h1>
+        <p className="text-stone-600 text-lg">
+          {t('dashboard.subtitle')}
+        </p>
       </div>
 
       {/* Main Content */}
@@ -73,34 +86,38 @@ export default function DashboardPage() {
           
           {/* Input Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
-            <h2 className="text-2xl font-bold text-stone-800 mb-8">Input</h2>
+            <h2 className="text-2xl font-bold text-stone-800 mb-8">
+              {t('dashboard.input')}
+            </h2>
             
             <div className="space-y-6">
               {/* Post Type Selector */}
               <div>
-                <label className="block font-semibold text-stone-700 mb-3">Post Type</label>
+                <label className="block font-semibold text-stone-700 mb-3">
+                  {t('dashboard.postType')}
+                </label>
                 <select
                   className="w-full px-4 py-4 rounded-2xl border border-stone-300 font-medium transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                   value={type}
                   onChange={(e) => setType(e.target.value)}
                 >
-                  <option>Instagram Caption</option>
-                  <option>Tweet</option>
-                  <option>Reply to Comment</option>
-                  <option>LinkedIn Post</option>
-                  <option>Facebook Post</option>
-                  <option>YouTube Description</option>
-                  <option>TikTok Caption</option>
+                  {postTypeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {t(`dashboard.postTypes.${option}`)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               {/* Input Field */}
               <div>
-                <label className="block font-semibold text-stone-700 mb-3">Your Idea</label>
+                <label className="block font-semibold text-stone-700 mb-3">
+                  {t('dashboard.yourIdea')}
+                </label>
                 <textarea
                   rows={4}
                   className="w-full px-4 py-4 rounded-2xl border border-stone-300 font-medium transition-all duration-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white resize-none"
-                  placeholder="e.g., announce new product drop, share behind the scenes, promote upcoming event..."
+                  placeholder={t('dashboard.placeholder')}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -119,12 +136,12 @@ export default function DashboardPage() {
                 {loading ? (
                   <>
                     <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span>Generating...</span>
+                    <span>{t('dashboard.generating')}</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-5 h-5" />
-                    <span>Generate Content</span>
+                    <span>{t('dashboard.generateContent')}</span>
                   </>
                 )}
               </button>
@@ -134,12 +151,14 @@ export default function DashboardPage() {
           {/* Output Section */}
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-bold text-stone-800">Generated Content</h2>
+              <h2 className="text-2xl font-bold text-stone-800">
+                {t('dashboard.generatedContent')}
+              </h2>
               {output && (
                 <button
                   onClick={copyToClipboard}
                   className="p-3 rounded-2xl transition-all duration-300 hover:scale-110 bg-stone-100 hover:bg-emerald-100 border border-stone-200"
-                  title="Copy to clipboard"
+                  title={t('dashboard.copyToClipboard')}
                 >
                   {copied ? (
                     <div className="w-5 h-5 text-emerald-600 font-bold flex items-center justify-center">✓</div>
@@ -162,10 +181,10 @@ export default function DashboardPage() {
               <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm font-bold text-stone-600 uppercase tracking-wider px-3 py-1 rounded-full bg-stone-200">
-                    {type}
+                    {t(`dashboard.postTypes.${type}`)}
                   </span>
                   <span className="px-3 py-1 rounded-full text-sm font-bold text-white bg-emerald-500">
-                    Ready to use
+                    {t('dashboard.readyToUse')}
                   </span>
                 </div>
                 <p className="text-stone-800 leading-relaxed whitespace-pre-wrap font-medium">
@@ -177,10 +196,10 @@ export default function DashboardPage() {
                 <div className="text-center">
                   <Sparkles className="w-12 h-12 text-stone-400 mx-auto mb-4" />
                   <p className="text-stone-600 font-medium">
-                    Your generated content will appear here
+                    {t('dashboard.contentPlaceholder')}
                   </p>
                   <p className="text-stone-500 text-sm mt-2">
-                    Enter your idea and click generate to get started
+                    {t('dashboard.contentSubtext')}
                   </p>
                 </div>
               </div>
@@ -190,19 +209,33 @@ export default function DashboardPage() {
 
         {/* Quick Tips */}
         <div className="mt-16 bg-white/60 backdrop-blur-sm rounded-3xl p-8 border border-stone-200 shadow-lg">
-          <h3 className="text-xl font-bold text-stone-800 mb-6">💡 Quick Tips</h3>
+          <h3 className="text-xl font-bold text-stone-800 mb-6">
+            {t('dashboard.quickTips')}
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <h4 className="font-semibold text-stone-800">Be Specific</h4>
-              <p className="text-stone-600 text-sm">Include details like target audience, tone, or specific features to mention for better results.</p>
+              <h4 className="font-semibold text-stone-800">
+                {t('dashboard.beSpecific')}
+              </h4>
+              <p className="text-stone-600 text-sm">
+                {t('dashboard.beSpecificDesc')}
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-stone-800">Add Context</h4>
-              <p className="text-stone-600 text-sm">Mention your industry, brand personality, or campaign goals for more targeted content.</p>
+              <h4 className="font-semibold text-stone-800">
+                {t('dashboard.addContext')}
+              </h4>
+              <p className="text-stone-600 text-sm">
+                {t('dashboard.addContextDesc')}
+              </p>
             </div>
             <div className="space-y-2">
-              <h4 className="font-semibold text-stone-800">Experiment</h4>
-              <p className="text-stone-600 text-sm">Try different post types and styles to discover what resonates best with your audience.</p>
+              <h4 className="font-semibold text-stone-800">
+                {t('dashboard.experiment')}
+              </h4>
+              <p className="text-stone-600 text-sm">
+                {t('dashboard.experimentDesc')}
+              </p>
             </div>
           </div>
         </div>

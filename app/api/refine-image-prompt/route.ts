@@ -1,3 +1,5 @@
+// /api/refine-image-prompt/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
@@ -5,6 +7,8 @@ import OpenAI from 'openai';
 import { v4 as uuidv4 } from 'uuid';
 
 export const runtime = 'nodejs';
+// You might need to increase the max duration on Vercel Pro plans if needed
+// export const maxDuration = 30; 
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,93 +35,56 @@ export async function POST(req: NextRequest) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // === STEP 1: Extract visual concept from vague prompt ===
-    const conceptRes = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a creative brand visual strategist. Your job is to interpret vague or marketing-style prompts and explain what core visual idea they aim to communicate. Include the key subject(s), message, emotional tone, and any embedded phrases or hashtags that should be displayed as text in the final image.`
-        },
-        {
-          role: 'user',
-          content: `User prompt: "${userPrompt}"\n\nBrand tone: ${brandSettings.tone || 'none'}\nKeywords: ${brandSettings.keywords || 'none'}`
-        }
-      ],
-      temperature: 0.7
-    });
-
-    const visualConcept = conceptRes.choices[0].message.content?.trim();
-    if (!visualConcept) {
-      throw new Error('GPT failed to extract visual concept.');
-    }
-
-    // === STEP 2: Turn concept into a detailed image scene ===
-    const sceneRes = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert visual designer. Based on the concept, describe a clean, engaging image scene that communicates it clearly. Include only 1–2 focal elements (e.g. a person and an object), a clear setting, mood, and any supporting details. This is not yet the final DALL·E prompt. Avoid clutter. If the prompt includes text, mention exactly where it should go, how it should appear, and the precise words to include.`
-        },
-        {
-          role: 'user',
-          content: `Concept summary: ${visualConcept}`
-        }
-      ],
-      temperature: 0.7
-    });
-
-    const sceneDescription = sceneRes.choices[0].message.content?.trim();
-    if (!sceneDescription) {
-      throw new Error('GPT failed to generate the scene description.');
-    }
-
-    // === STEP 3: Format final DALL·E 3-ready prompt ===
+    // === NEW: SINGLE GPT-4 CALL TO RULE THEM ALL ===
+    // This combines all three previous steps into one efficient request.
+    console.log('1. Generating refined DALL-E prompt with a single GPT-4 call...');
     const finalPromptRes = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4-turbo', // Using turbo is faster and cheaper
       messages: [
         {
           role: 'system',
-          content: `You are an expert image prompt engineer. Format the following scene into a polished, DALL·E 3-ready prompt using the structure below. The final prompt should be clean, legible, and stylistically consistent.
+          content: `You are an expert visual strategist and prompt engineer. Your goal is to convert a user's idea into a single, perfect, DALL-E 3-ready image prompt.
 
-Use this structure:
+          Follow these steps internally:
+          1.  **Analyze Concept**: Understand the core visual idea, message, and tone from the user's prompt and their brand settings.
+          2.  **Design Scene**: Based on the concept, design a clean, engaging image scene. Focus on 1-2 key elements, a clear setting, and mood. Avoid visual clutter.
+          3.  **Construct Final Prompt**: Format the designed scene into a detailed DALL-E 3 prompt using the structure below.
 
-"A [style/adjective] [type of image] of [subject], placed in/on [environment/context], using [lighting or mood], with [composition details if needed]. The image is in [design style], with a [color palette].
+          **Final Prompt Structure:**
+          "A [style/adjective] [type of image] of [subject], placed in/on [environment/context], using [lighting or mood], with [composition details if needed]. The image is in [design style], with a [color palette].
 
-If text is needed: In the [location], [text language] text says '[Headline]'. Below that, in smaller text, it says '[Subheadline]'. The text is in [font style] and [color], and is naturally integrated and clearly legible — placed on a clean background or overlay box.
+          If text is needed: In the [location], [text language] text says '[Headline]'. Below that, in smaller text, it says '[Subheadline]'. The text is in [font style] and [color], and is naturally integrated and clearly legible.
 
-Shot in [aspect ratio] aspect ratio. [Style notes like: flat design, photorealistic, vector art, digital painting, etc.]
+          Shot in [aspect ratio] aspect ratio. [Style notes like: flat design, photorealistic, vector art, etc.]"
 
-IMPORTANT:
-- Limit visual elements to a few clear components.
-- Avoid busy or cluttered backgrounds.
-- Ensure text is readable, properly placed, and contrasts with its background.
-- If using photorealism, do not embed small or complex text in the environment.
-- Bold ideas. Simplify visuals. Prioritize storytelling clarity."
-
-Only output the final refined image prompt.`
+          **CRITICAL RULES:**
+          - Prioritize storytelling and clarity. Bold ideas, simple visuals.
+          - If the user asks for text, ensure it's short, readable, and contrasts with the background.
+          - Your FINAL output MUST BE ONLY the DALL-E 3 prompt string and nothing else. Do not add any conversational text or explanations like "Here is the prompt:".`
         },
         {
           role: 'user',
-          content: `Scene: ${sceneDescription}`
+          content: `User Idea: "${userPrompt}"\n\nBrand Tone: ${brandSettings.tone || 'not specified'}\nBrand Keywords: ${brandSettings.keywords || 'not specified'}`
         }
       ],
-      temperature: 0.7
+      temperature: 0.7,
     });
 
-    const masterPrompt = finalPromptRes.choices[0].message.content?.trim();
+    const masterPrompt = finalPromptRes.choices[0].message.content?.trim().replace(/^"|"$/g, ''); // Clean up potential quotes
     if (!masterPrompt) {
-      throw new Error('GPT failed to produce the final DALL·E prompt.');
+      throw new Error('GPT-4 failed to produce the final DALL-E prompt.');
     }
 
-    console.log('Final Refined Prompt:', masterPrompt);
+    console.log('2. Final Refined Prompt:', masterPrompt);
 
-    // === STEP 4: Generate the image ===
+    // === STEP 2: Generate the image (this part remains the same) ===
+    console.log('3. Sending prompt to DALL-E 3...');
     const imageResponse = await openai.images.generate({
       model: 'dall-e-3',
       prompt: masterPrompt,
       n: 1,
+      // NOTE: DALL-E 3's `size` param determines aspect ratio. You'll need to parse this from the user's prompt or add a UI selector for it.
+      // For now, it's hardcoded to square.
       size: '1024x1024',
       quality: 'hd',
       style: 'vivid'
@@ -125,10 +92,11 @@ Only output the final refined image prompt.`
 
     const finalImageUrl = imageResponse.data[0].url;
     if (!finalImageUrl) {
-      throw new Error('DALL·E 3 failed to return an image.');
+      throw new Error('DALL-E 3 failed to return an image.');
     }
 
-    // === STEP 5: Upload to Supabase ===
+    // === STEP 3: Upload to Supabase (this part remains the same) ===
+    console.log('4. Uploading final asset to storage...');
     const fetchedImage = await fetch(finalImageUrl);
     const imageBuffer = Buffer.from(await fetchedImage.arrayBuffer());
     const filename = `${user.id}/${uuidv4()}.png`;
@@ -149,13 +117,13 @@ Only output the final refined image prompt.`
 
     return NextResponse.json({
       imageUrl: publicUrl,
-      refinedPrompt: masterPrompt,
-      concept: visualConcept,
-      scene: sceneDescription
+      // You no longer have the intermediate steps, so we only return the refined prompt
+      refinedPrompt: masterPrompt, 
     });
 
   } catch (err: any) {
-    console.error('Image generation error:', err);
+    console.error('Image generation process failed:', err);
+    // This catch block will now be reached if something goes wrong within the time limit.
     return NextResponse.json(
       { error: 'Image generation process failed.', details: err.message },
       { status: 500 }
